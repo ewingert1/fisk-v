@@ -33,18 +33,17 @@
 #define TCER_REG		TIMER_BASE + 0x84
 #define TCMR_REG		TIMER_BASE + 0x88
 
-
-void bl602_irq_handler()
-{
-
-
-	*((uint32_t*)TICR2_REG) = 1;
-}
-
 void gpio11_toggle()
 {
 	*((uint32_t*)(GPIO_BASE+0x88)) = *((uint32_t*)(GPIO_BASE+0x88)) ^ (1 << 11);
 }
+
+void bl602_irq_handler()
+{
+	gpio11_toggle();
+	*((uint32_t*)TICR2_REG) = 1;
+}
+
 
 void gpio11_init()
 {
@@ -59,7 +58,7 @@ void gpio11_init()
 void timer_init()
 {
 	/* clock 32k pour timer2 */
-	*((uint32_t*)TCCR_REG) |= 0b0100;
+	*((uint32_t*)TCCR_REG) = 0b0100;
 	/* match with 32000 => T=1s a peu pres */
 	*((uint32_t*)TMR2_0_REG) = 32000;
 	/* enable interrupt on timer2 with match register 0 */
@@ -72,5 +71,7 @@ void timer_init()
 
 void bl602_main()
 {
-
+	gpio11_init();
+	timer_init();
+	while(1);
 }
