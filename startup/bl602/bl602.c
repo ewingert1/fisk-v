@@ -7,8 +7,11 @@
 #define GPIO_GPIO_ENABLE_OFFSET 0x90
 #define GPIO_GPIO_OUTPUT_OFFSET 0x88
 
+#define IRQ_CAUSE_BASE			16
+#define IRQ_CAUSE_TIMER2		IRQ_CAUSE_BASE + 36
 
-
+#define CLIC_HART0_ADDR			0x02800000
+#define CLIC_INTIE				0x400
 
 #define TIMER_BASE 		0x4000a500
 #define TCCR_REG		TIMER_BASE
@@ -27,6 +30,9 @@
 #define TIER2_REG		TIMER_BASE + 0x44
 #define TIER3_REG		TIMER_BASE + 0x48
 
+#define TPLVR2_REG		TIMER_BASE + 0x50
+#define TPLCR2_REG		TIMER_BASE + 0x5C
+
 #define TICR2_REG		TIMER_BASE + 0x78
 #define TICR3_REG		TIMER_BASE + 0x7C
 
@@ -38,10 +44,12 @@ void gpio11_toggle()
 	*((uint32_t*)(GPIO_BASE+0x88)) = *((uint32_t*)(GPIO_BASE+0x88)) ^ (1 << 11);
 }
 
+__attribute__((naked))
 void bl602_irq_handler()
 {
-	gpio11_toggle();
-	*((uint32_t*)TICR2_REG) = 1;
+	// gpio11_toggle();
+	*((uint32_t*)(GPIO_BASE+0x88)) = *((uint32_t*)(GPIO_BASE+0x88)) ^ (1 << 11);
+	*((uint32_t*)TICR2_REG) = 0b111;
 }
 
 
@@ -53,25 +61,50 @@ void gpio11_init()
 	*((uint32_t*)(GPIO_BASE+0x14)) = gpio11_cfg;
 	/* output enable on gpio11 */
 	*((uint32_t*)(GPIO_BASE+0x90)) = 1 << 11;
+	*((uint32_t*)(GPIO_BASE+0x88)) = 1 << 11;
 }
 
 void timer_init()
 {
-	/* clock 32k pour timer2 */
-	*((uint32_t*)TCCR_REG) = 0b0100;
-	/* match with 32000 => T=1s a peu pres */
-	*((uint32_t*)TMR2_0_REG) = 32000;
+	/* enable toutes les clocks */
+	*((uint32_t*)(0x40000000)) |= 0b1111;
+	/* enable clock pour timer */
+	*((uint32_t*)(0x40000024)) |= ((1 << 0x15) | 1) ;
+
+	/* timer interruption enable in the clic */
+	*(volatile uint8_t*)(CLIC_HART0_ADDR + CLIC_INTIE + IRQ_CAUSE_TIMER2) = 1;
+	*(volatile uint8_t*)(CLIC_HART0_ADDR + CLIC_INTIE + IRQ_CAUSE_TIMER2 + 1) = 1;
+
+	/* count disable pour timer2 */
+	*((uint32_t*)TCER_REG) &= (~0b10);
+	/* clock 1kHz pour timer2 et timer3 */
+	*((uint32_t*)TCCR_REG) &= (~0b1100);
+	*((uint32_t*)TCCR_REG) = 0b1000;
+	/* match with 1000 => T=1s a peu pres */
+	*((uint32_t*)TMR2_0_REG) = 1000;
+	/* timer2 valeur par defaut 0 */
+	*((uint32_t*)TPLVR2_REG) = 0;
+	/* timer2 preload a comparer avec match register 0 */
+	*((uint32_t*)TPLCR2_REG) &= (~0b11);
+	*((uint32_t*)TPLCR2_REG) |= 1;
+	/* preload pour timer2 => ca compte de 0 à match reg0 => interrupt puis compteur = match reg0*/
+	*((uint32_t*)TCMR_REG) = 0;
 	/* enable interrupt on timer2 with match register 0 */
-	*((uint32_t*)TIER2_REG) = 1;
+	*((uint32_t*)TIER2_REG) &= (~0b111);
+	*((uint32_t*)TIER2_REG) |= 1;
 	/* count enable pour timer2 */
-	*((uint32_t*)TCER_REG) = 2;
-	/* free run pour timer2 => ca compte de 0 à match reg0 => interrupt */
-	*((uint32_t*)TCMR_REG) = 2;
+	*((uint32_t*)TCER_REG) |= 0b10;
 }
 
 void bl602_main()
 {
 	gpio11_init();
 	timer_init();
-	while(1);
+	while(1)
+	{
+		if ( *((uint32_t*)TCR2_REG) >= 500 )
+		{
+			gpio11_toggle();
+		} 
+	}
 }
