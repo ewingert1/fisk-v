@@ -1,5 +1,6 @@
 OUTPUT_FORMAT("elf32-littleriscv", "elf32-littleriscv", "elf32-littleriscv")
 OUTPUT_ARCH("riscv")
+ENTRY(main)
 
 MEMORY{
     	RAM : ORIGIN = 0x42020000 , LENGTH = 256K
