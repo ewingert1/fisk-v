@@ -1,5 +1,3 @@
-#define MSTATUS_FS      0x00006000
-
 .section .init
 
 .globl main
@@ -20,15 +18,14 @@ loop:
 	wfi
 	j loop
 
-
 .globl allume
 allume:
 	li t4, 0x40000100
-	sw x0, 0x88(t4) # 
+	sw x0, 0x88(t4) 
 
 .align 8
 .globl fiskv_handler
 fiskv_handler:
-	j allume
+	j systick
 	mret
 

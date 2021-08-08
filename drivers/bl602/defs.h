@@ -4,9 +4,11 @@
 #define BL_DRV_DUMMY        {__NOP();__NOP();__NOP();__NOP();}
 
 /* Set mie (machine interrupt enable) in mstatus CSR => bit3 */
-#define BL602_ENABLE_IRQ()    __asm volatile( "csrsi mstatus, 0b1000" );
+#define BL602_ENABLE_IRQ()      __asm volatile( "csrsi mstatus, 0b1000" );
 /* Clear mie in mstatus */
-#define BL602_DISABLE_IRQ()   __asm volatile( "csrci mstatus, 0b1000" );
+#define BL602_DISABLE_IRQ()     __asm volatile( "csrci mstatus, 0b1000" );
+/* WFI */
+#define BL602_WAIT_IRQ()        __asm volatile( "wfi" );
 
 /* BASE ADDRESSES */
 #define GLB_BASE 	    0x40000000

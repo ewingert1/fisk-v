@@ -6,42 +6,27 @@
 /* Stuff copied from bl_iot_sdk to understand what's wrong */
 uint64_t ullNextTime = 0ULL;
 const uint64_t *pullNextTime = &ullNextTime;
-uint32_t uxTimerIncrementsForOneTick = ( uint32_t ) 500000; 
+uint32_t uxTimerIncrementsForOneTick = ( uint32_t ) 5000; 
 volatile uint64_t * const pullMachineTimerCompareRegister = ( volatile uint64_t * const ) ( CLIC_MTIMECMP );
 /* ******************************************************* */
 
 void set_mtimer_interrupt()
 {
-	uint32_t ulCurrentTimeHigh, ulCurrentTimeLow;
-	volatile uint32_t * const pulTimeHigh = ( volatile uint32_t * const ) ( CLIC_MTIME_H );
-	volatile uint32_t * const pulTimeLow = ( volatile uint32_t * const ) ( CLIC_MTIME_L );
-
-	do
-	{
-		ulCurrentTimeHigh = *pulTimeHigh;
-		ulCurrentTimeLow = *pulTimeLow;
-	} while( ulCurrentTimeHigh != *pulTimeHigh );
-
-	ullNextTime = ( uint64_t ) ulCurrentTimeHigh;
-	ullNextTime <<= 32ULL;
-	ullNextTime |= ( uint64_t ) ulCurrentTimeLow;
-	ullNextTime += ( uint64_t ) uxTimerIncrementsForOneTick;
-	*pullMachineTimerCompareRegister = ullNextTime;
-
-	/* Prepare the time to use after the next tick interrupt. */
-	ullNextTime += ( uint64_t ) uxTimerIncrementsForOneTick;
+	disable_irq(INT_CAUSE_MTIMER);
+    *(volatile uint64_t*)(CLIC_MTIME) = 0;
+    *(volatile uint64_t*)(CLIC_MTIMECMP) = 12000000;
 	enable_irq(INT_CAUSE_MTIMER);
 }
 
 void timer_init()
 {
-	// /* enable toutes les clocks */
-	// *((volatile uint32_t*)(0x40000000)) |= 0b1111;
-	// BL_DRV_DUMMY;
-	// /* enable clock pour timer */
-	// *((volatile uint32_t*)(0x40000024)) |= (0x3FFFF) ;
-	// BL_DRV_DUMMY;
-	// for (int j=0; j<50000; j++);
+	/* enable toutes les clocks */
+	*((volatile uint32_t*)(0x40000000)) |= 0b1111;
+	BL_DRV_DUMMY;
+	/* enable clock pour timer */
+	*((volatile uint32_t*)(0x40000024)) |= (0x3FFFF) ;
+	BL_DRV_DUMMY;
+	for (int j=0; j<50000; j++);
 
 	*((volatile uint32_t*)TCER_REG) &= (~0b111);
 
