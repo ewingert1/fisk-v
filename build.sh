@@ -1,14 +1,5 @@
 #!/bin/bash
 
-TOOLCHAIN_PREFIX="/home/wem/bl602_sdk/bl_iot_sdk/toolchain/riscv/Linux/bin/riscv64-unknown-elf"
-
-riscv64-elf-gcc -L /usr/riscv32-elf/lib -I/usr/riscv32-elf/include/ -march=rv32imafc -mabi=ilp32 -mcmodel=medlow -nostartfiles -T linker/bl602/memmap.ld startup/bl602/* -o firmware.elf
+riscv64-elf-gcc -L /usr/riscv32-elf/lib -I /usr/riscv32-elf/include/ -I drivers/ -DTARGET_BL602 -march=rv32imafc -mabi=ilp32 -mcmodel=medlow -nostartfiles -T linker/bl602/memmap.ld drivers/bl602/gpio.c drivers/bl602/timer.c drivers/bl602/irq.c startup/bl602/bl602.c startup/bl602/bl602.S -o firmware.elf
 riscv32-elf-objcopy -O binary firmware.elf firmware.bin
-
-#riscv64-elf-as -march=rv32i -mabi=ilp32 test.S -o firmware.elf
-#riscv32-elf-objcopy -O binary firmware.elf firmware.bin
-
-#$TOOLCHAIN_PREFIX-as -o firmware.o startup/bl602/startup.S -march=rv32i -mabi=ilp32
-#$TOOLCHAIN_PREFIX-ld -o firmware.elf firmware.o -m elf32lriscv
-#$TOOLCHAIN_PREFIX-objcopy firmware.elf -O binary firmware.bin
 

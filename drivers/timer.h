@@ -1,7 +1,6 @@
 #pragma once
 #include <stdint.h>
 
-typedef struct
-{
-    int timer_id;
-}timer_t;
+void set_mtimer_interrupt();
+void timer_init();
+
